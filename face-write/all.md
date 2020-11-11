@@ -1203,10 +1203,6 @@ vue响应式系统：
    3. Proxy的多种拦截方法：除了get和set外，apply、ownKeys、deleteProperty、has、getOwnPropertyDescriptor、getPrototypeOf等Object.defineProperty不具备；
    4. Proxy返回的是一个新对象,可只操作新对象达到目的，Object.defineProperty是遍历对象属性直接修改；
 
-我们现在项目中用的都是2.0，现在3.0还没有应用到实战，2.0的话现在做项目是没有问题的，他的双向数据绑定的原理是基于Object.defineProperty来实现的，实现思路：
-20181124杭州主题演讲发布3.0将要重构提到了基于proxy的新数据监听系统，直到去年十月份 尤发微博 3.0源码开放，网上大家也都有很多的评价，3相对于2来说是一个全心的变革，
-基于proxy的做的话有很多好处，比如：，而且3.0除此之外还提出了
-
 
 
 
@@ -1221,7 +1217,6 @@ vue响应式系统：
  - React 事件系统庞大复杂，暴漏给开发者的事件不是原生事件，是 React 包装过合成事件。
  - React 中事件处理函数中的 this 默认不指向组件实例。
  
- （嘉尧分享React、Angular、Vue：https://zhuanlan.zhihu.com/p/144160124?utm_source=wechat_session&utm_medium=social&s_r=0#showWechatShareTip）
   
   
   
