@@ -471,9 +471,9 @@ js运行机制：
 
 ### 跨域请求
 
-同源：域名+协议+端口；
+产生跨域是因为浏览器同源策略（同源：域名+协议+端口；两个不同的域名指向同一个ip地址，是非同源）
 
-1.JSONP： script 标签的 src 属性不会被同源策略所约束，可以获取任意服务器上的脚本并执行。
+1.JSONP： script 标签的 src 属性不会被同源策略所约束，可以获取任意服务器上的脚本并执行。请求需要带callback，返回的json数据被callback包裹。
 
 ```javascript
     // 1
@@ -506,6 +506,13 @@ js运行机制：
 
 2.跨域资源共享（CORS）
 
+浏览器对跨域请求区分为“简单请求”与“非简单请求”
+
+- 简单请求：1、请求方法为head/get/post/；2、且HTTP头部信息包含在Accept | Accept-Language | Content-Language | Last-Event-ID | Content-Type:application/x-www-form-urlencoded、 multipart/form-data、text/plain
+- 非简单请求：不满足上述1&2，如content-type=applicaiton/json , method = PUT/DELETE...。
+- 浏览器判断跨域为简单请求的时候，会在Request Header中添加 Origin（协议/域名/端口）字段 ，表示请求源，CORS服务端将该字段作为跨源标志，验证通过会在Response Header 添加Access-Control-Allow-Origin等字段。
+- 浏览器判断跨域为非简单请求的时候，首先发出OPTIONS预检请求，服务端处理后对Response Header添加Access-Control-Allow-Origin等验证字段，客户端接受预检请求的返回值进行请求预判断，验证通过后，主请求发起。非简单请求需要CORS服务端对OPTIONS类型的请求做处理，其他与简单请求一致。
+
 - 前端：若要携带cookie前端设置withCredentials = true；
 - 后端：
 
@@ -515,8 +522,9 @@ js运行机制：
       response.setHeader("Access-Control-Allow-Headers", "Content-Type,X-Requested-With");// 提示OPTIONS预检时，后端需要设置的两个常用自定义头
     ```
 
-3.nginx反向代理接口跨域；真实部署的时候用，结合3 + 4
-4.Nodejs中间件代理跨域 http-proxy-middleware；开发的时候用，结合3 + 4
+3.nginx反向代理接口跨域；真实部署的时候用，修改nginx.conf文件，location匹配要代理的接口，proxy_pass代理到真正的域名下
+4.Nodejs中间件代理跨域 http-proxy-middleware；开发的时候用，结合3 + 4，请求先到node服务，然后再转发到实际请求地址，先走路由，后根据路由匹配到对应的controller，在controller中去请求实际接口。
+
 5.HTML5 API postMessage()：页面和其打开的新窗口的数据传递，页面与嵌套的iframe消息传递，多窗口之间消息传递。
 6.WebSocket协议跨域：浏览器与服务器全双工通信，允许跨域通讯。
 7.window.name + iframe； location.hash + iframe； document.domain + iframe
@@ -617,9 +625,11 @@ script&async：HTML解析 + 异步加载js - 加载完js后立即执行js - 解�
 
 ### 项目中用的es6新特性
 
-1. let声明变量，有块级作用域，不可重复声明，不存在变量提升。
-   const声明常量，声明后必须赋值，必须为不可变的量。
-   let、const、class声明的全局变量不属于顶层对象的属性。
+1. let与 const：
+   - let声明变量，有块级作用域，不可重复声明，不存在变量提升。
+   - const声明常量，声明后必须赋值，必须为不可变的量。
+   - let、const、class声明的全局变量不属于顶层对象的属性。
+   - 暂时性死区：
 2. 箭头函数this指向定义时所在对象，不能作构造函数，不存在arguments对象，不能用作Generator函数。
 3. 数据结构Set：类似于数组，成员不能重复，可遍历。
    - 实例方法：add(value)、delete(value)、has(value)、clear()
@@ -642,18 +652,25 @@ script&async：HTML解析 + 异步加载js - 加载完js后立即执行js - 解�
 - for(let value of obj){} ES6新增所有数据结构的统一遍历方法，循环读取键值。可以与continue break return配合使用。
 - for...of适用于所有部署了[Symbol.iterator]属性的数据结构，如Map，Set，Array，类似于数据的对象arguments、DOM Nodelist等。
 
-### 数组的方法
+### 遍历对象属性
 
-- push()，尾加，返回修改后数组的长度
-- pop()，尾减，返回移除项
-- shift()，头减，返回移除项
-- unshift()，头加，返回修改后数组的长度
+- for(let key in obj){} 包括原型链上的对象继承的-可枚举-属性
+- object.keys 不包括原型链上的-可枚举-属性
+- object.entries 不包括原型链上的-可枚举-属性
+- object.getOwnPropertyName 不包括原型链上的-可枚举+不可枚举-属性
 
-- reverse()，反转排序
-- sort()，排序
+### 数组的方法，哪些会改变原数组
+
+- push()，尾加，返回修改后数组的长度，-------改变原数组
+- pop()，尾减，返回移除项，-------改变原数组
+- shift()，头减，返回移除项，-------改变原数组
+- unshift()，头加，返回修改后数组的长度，-------改变原数组
+
+- reverse()，反转排序，-------改变原数组
+- sort()，排序，-------改变原数组
 
 - concat()，合并且创建新数组
-- slice(起始位置,结束位置)，截取包头不包尾，创建新数组
+- slice(起始位置,结束位置)，截取包头不包尾，创建新数组，-------改变原数组
 - splice(删除的第一项的位置,删除的项数,插入的项)，改变原数组
 
 - forEach()对数组中的每一项运行给定函数。这个方法没有返回值
@@ -669,12 +686,14 @@ script&async：HTML解析 + 异步加载js - 加载完js后立即执行js - 解�
 - ['a', 'b', 'c'].fill(填充值, 填充起始位置, 填充结束位置)
 - [1, 2, 3].includes(包含谁, 从哪开始找)
 - [1, 2, [3, [4, 5]]].flat(拉平多少层/默认“拉平”一层/Infinity拉全部) 数组降维
-- [1, 2, 3, 4, 5].copyWithin(被开始替换, 开始读取，停止读取)，在数组内部将指定位置成员覆盖到其他位置，修改当前数组。
-- ['a', 'b', 'c'].fill(填充值, 填充起始位置, 填充结束位置)
+- [1, 2, 3, 4, 5].copyWithin(被开始替换, 开始读取，停止读取)，在数组内部将指定位置成员覆盖到其他位置，修改当前数组。，-------改变原数组
+- ['a', 'b', 'c'].fill(填充值, 填充起始位置, 填充结束位置)，-------改变原数组
 - entries()、keys()、values()返回遍历器对象，可用 for...of 遍历
 
 ### Promise
 
+- Promise：异步编程的一种解决方案
+- 优势：可以将异步操作以同步操作的流程表达出来，避免了层层嵌套的回调函数。此外，Promise对象提供统一的接口，使得控制异步操作更加容易。
 - Promise构造函数接受一个函数作为参数，该函数有两个参数resolve函数和reject函数，
 - resolve函数在异步操作成功时将异步操作的结果作为参数传递出去，resolve(res)调用触发then方法第一个参数的回调函数。
 - reject函数在异步操作失败时将异步操作报出的错误作为参数传递出去。reject(msg)调用触发then方法第二个参数的回调函数。
@@ -698,6 +717,9 @@ promise.then(function(value) {
 - Promise.all：接受一个数组作为参数，将多个Promise实例包装成一个新的Promise实例。成功返回结果数组，失败返回最先被reject失败状态的值。
 - Promise.race：接受一个数组作为参数，哪个结果获得的快，就返回那个结果，不管结果本身是成功状态还是失败状态。
 - Promise.resolve：接受一个对象参数，将现有对象转为 Promise 对象。
+
+原生js实现ajax：建XMLHttpRequest、open、onreadystatechange、 send
+
 
 ### Generator
 
@@ -896,6 +918,8 @@ Await—在async函数内部使用，在Promise前使用，暂停异步的功能
 12. 其他：图片懒加载方案；代码压缩；雪碧图；
 13. 使用 Chrome Performance 查找性能瓶颈。
 
+### webpack5
+
 ### 大批量数据前端展示卡顿问题
 
  1. 使用函数节流和防抖，避免短时间内多次触发复杂的业务逻辑而造成页面卡顿，节约性能。
@@ -1072,6 +1096,10 @@ vue响应式系统：
 2. 一个创建Virtual DOM Tree的函数，构造DOM树；
 3. 一个将抽象对象转化为真实DOM的函数；
 4. diff比较新旧DOM树超出差异并更新；
+5. diff 是虚拟dom技术中的必要产物，将变化更新到真实的dom上，降低时间复杂度为o(n)
+6. 而diff算法的必要性就是组件中watcher粒度的降低，每个组件会有一个对应的 watcher 对象，组件中有很多data，为了精确的知道一个组件中到底谁发生了变化而使用diff，lifecycle.js - mountComponent()
+7. diff算法执行的时刻是在vue实例执行其更新函数的时候，它会对比上一次渲染结果oldVnode和新的渲染结果newVnode，这个过程就是patch，patch.js - patchVnode()
+8. diff整个过程是一个深度优先，同层比较的一个策略，
 
 ### vue的实现
 
@@ -1106,8 +1134,9 @@ vue响应式系统：
       - 同时每个组件会有一个对应的 watcher 对象，负责在当前组件被渲染的时候，记录数据上面的哪些属性被用到了。
       - 当某个数据属性被用到，触发 getter，这个属性就会被作为依赖被 watcher 记录下来。
       - 相应的数据变动时，就会触发 setter，通知数据对象对应数据有变化。
-      - 通知对应的组件，其数据依赖有所改动，需要重新渲染。
+      - 通知对应的组件，其数据依赖有所改动，需要重新渲染，触发diff执行。
       - 对应的组件再次调动渲染函数，生成 Virtual DOM，实现 DOM 更新。
+
    2. 组件系统
       - 把UI结构映射到恰当的组件树。
       - 基于构建工具实现单文件组件, 在一个Vue文件里同时写 template, script 和 style。通过构建可以对这些单文件组件做更多的分析。
@@ -1244,11 +1273,24 @@ vuex：vuejs管理数据状态，通过创建一个集中的数据存储，供�
 
   ​axios：不是vue里的，代替vue-resource
 
-  vue3：
-  - 提升运行时性能，重写VDOM，跳过静态节点，只处理动态节点；
-  - 提升网络性能，引入treeshaking机制，只打包必要的依赖项；
-  - 完全的typescript支持；
-  - 便利性改进：Fragment模板更简单，Teleport布局更灵活，suspense异步组件，composition-api逻辑复用代替mixin。
+### vue3
+
+- 提升运行时性能，重写VDOM，跳过静态节点，只处理动态节点，速度更快；
+- 提升网络性能，引入treeshaking机制，只打包必要的依赖项，项目最后打包的体积最小化；
+- 所有组件均可按需加载，更灵活的组件化；
+- 完全的typescript支持；
+- composition-api:
+  - setup 初始化函数返回一个对象暴露给模板，即为声明的数据，
+  - 在 setup 中 this 为 undefined
+  - setup 函数俩参数：props 获取父组件传来的参数；context 向外发布事件和数据 context.emit
+  - 用 ref 或者 reactive 包裹的数据为响应式的，为此开发者可以自行定义那些数据是需要响应式的，哪些数据不需要
+  - 更易维护：在同一个方法中完成同一个需求的所有功能
+- vite: 快！快速冷启动，即时模块热更新，按需编译
+  - script module 是 ES 模块在浏览器端的实现，使用 export、import 的方式导入和导出模块，浏览器将对其内部的 import 引用发起 http 请求获取模块内容，ESM 天生按需加载，只有 import 的时候才会去按需加载。
+  - webpack 使用 map 存放模块 id 和路径，使用 webpack_require 方法获取模块导出，不管某个模块的代码是否执行到，这个模块都要打包到 bundle 里，随着项目越来越大打包后的 bundle 也越来越大。
+
+  对Vue.js进行了完全Typescript重构，让Vue.js源码易于阅读、开发和维护；
+重写了虚拟Dom的实现，对编译模板进行优化、组件初始化更高效， 性能上有较大的提升；Vue.js2对象式组件存在一些问题：难以复用逻辑代码、难以拆分超大型组件、代码无法被压缩和优化、数据类型难以推倒等问题；而CompositionAPI 则是基于函数理念，去解决上述问题，使用函数可以将统一逻辑的组件代码收拢一起达到复用，也更有利于构建时的tree-shaking检测，这个使用起来有些类似于React的hook；
 
 ### AngularJS项目
 
@@ -1368,14 +1410,14 @@ PWA：Progressive Web App，渐进式WEB应用。
 - 流畅：借助serviceWorker，在离线情况下也可正常访问，传统网页断网了，刷新页面就加载不出来了；
 - 可安装：用户可通过网址添加常用webapp到桌面，体验和原生应用差不多，有首屏加载动画，隐去地址栏等；
 - 粘性：可以离线推送通知；
-- 仅支持hppts协议域名和http://localhost下访问。
+- 仅支持hppts协议域名和 localhost 下访问。
 
 核心技术：
 
 1. Web App Manifest 应用程序清单
    - 解释：一个JSON文件，提供了有关应用程序的信息；
    - 作用：实现添加到桌面，有图标和名称，有启动界面，隐藏地址栏等浏览器相关UI；
-   - 使用：创建manifest.json文件,在index.html中引入，<link rel="manifest" href="manifest.json"/>；
+   - 使用：创建manifest.json文件,在index.html中引入，```<link rel="manifest" href="manifest.json"/>```；
    - 文件内容配置
 2. Service Worker
    - H5 API，主要用来做持久离线缓存，浏览器navigator的内置属性；
@@ -1558,7 +1600,7 @@ PWA：Progressive Web App，渐进式WEB应用。
 - click 300ms 延时响应  FastClick
 - 安卓部分版本input里的placeholder位置偏上 把input的line-height设为normal
 - 输入框在固定在最上面，但是用ios下当键盘弹起时fixed会失效。把页面滚动改为容器内滚动。
-- ios滚动时动画停止  better-scroll
+- ios滚动时动画停止  better-scroll想·
 - 禁止数字识别为电话号码  ```<meta name = "format-detection" content = "telephone=no">```
 - 滚动穿透问题  借助滚动条插件  弹层中 弹层出现的时候给body增加overflow:hidden 弹层关闭时去掉
 
@@ -1571,7 +1613,6 @@ PWA：Progressive Web App，渐进式WEB应用。
 - nodejs 中默认的模块化规范 commonjs
 - 接口开发：处理 http 请求，开发接口，get 请求与 querystring，post 请求与 postdata，路由，nodemon 开发环境修改后自动重启
 - stream 写日志，Redis 存 session
-
 - pm2 进程守候
 
 ### MySQL
